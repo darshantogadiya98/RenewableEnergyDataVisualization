@@ -7,6 +7,8 @@ The **Renewable Energy Dashboard** is a full-stack web application for managing 
 - **Authenticate** via JWT-based signup and login
 - **Upload** CSV datasets of energy production and consumption
 - **Visualize** hourly renewable energy data in interactive charts
+- **Save** favorite visualizations or
+- **Set alerts** for specific energy consumption or generation thresholds
 
 The backend is built with **FastAPI** (Python) and **PostgreSQL**, while the frontend is implemented in **React** (TypeScript). The application can run locally via Docker Compose or be deployed on AWS using Terraform, Elastic Beanstalk, S3, and CloudFront.
 
