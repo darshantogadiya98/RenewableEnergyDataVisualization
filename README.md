@@ -71,13 +71,15 @@ GITHUB_TOKEN=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
 
 FRONTEND_URL=http://energy-dashboard-frontend-5790d44a.s3-website-us-west-2.amazonaws.com
 
+After CloudFeont Setup - d1v02mozm1fy9b.cloudfront.net (This is main URL with domain on it)
+
 ============================================================================================================================
 
 4. Local Setup
 
 Backend
 
-git clone https://github.com/<org>/energy-dashboard.git
+git clone https://github.com/darshantogadiya98/RenewableEnergyDataVisualization.git
 cd energy-dashboard/backend
 python3 -m venv .venv
 source .venv/bin/activate # macOS/Linux
