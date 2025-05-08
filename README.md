@@ -38,6 +38,8 @@ The backend is built with **FastAPI** (Python) and **PostgreSQL**, while the fro
 
 [Visit the live frontend here](https://d1v02mozm1fy9b.cloudfront.net/login)
 
+> **Note:** After logging in, if the data doesn't load or the date remains unchanged, please refresh the page once more. Thank you!
+
 ---
 
 ## Prerequisites
