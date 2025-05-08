@@ -34,6 +34,12 @@ The backend is built with **FastAPI** (Python) and **PostgreSQL**, while the fro
 
 ---
 
+## Live Frontend Test URL
+
+[Visit the live frontend here](https://d1v02mozm1fy9b.cloudfront.net/login)
+
+---
+
 ## Prerequisites
 
 - **Python 3.10+**
@@ -219,6 +225,8 @@ Replace `localhost:8000` with your production domain as needed.
 
 ## Architecture Diagram
 
+```html
 <img src="./architechture.png" alt="Architecture Diagram" />
+```
 
 _Users access the application via CloudFront. Static content is served from S3, and API requests are routed to Elastic Beanstalk, which communicates with RDS._
