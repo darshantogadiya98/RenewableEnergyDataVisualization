@@ -227,8 +227,6 @@ Replace `localhost:8000` with your production domain as needed.
 
 ## Architecture Diagram
 
-```html
 <img src="./architechture.png" alt="Architecture Diagram" />
-```
 
 _Users access the application via CloudFront. Static content is served from S3, and API requests are routed to Elastic Beanstalk, which communicates with RDS._
