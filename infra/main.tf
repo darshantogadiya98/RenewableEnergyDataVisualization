@@ -218,28 +218,9 @@ resource "aws_s3_bucket_website_configuration" "frontend" {
     suffix = "index.html"
   }
 
-
-  # instead of error_document, use SPA routing rules:
-  routing_rules = <<ROUTING
-  [
-    {
-      "Condition": {
-        "HttpErrorCodeReturnedEquals": "404"
-      },
-      "Redirect": {
-        "ReplaceKeyWith": "index.html"
-      }
-    },
-    {
-      "Condition": {
-        "HttpErrorCodeReturnedEquals": "403"
-      },
-      "Redirect": {
-        "ReplaceKeyWith": "index.html"
-      }
-    }
-  ]
-  ROUTING
+  error_document {
+    key = "index.html"
+  }
 }
 
 resource "aws_s3_bucket_policy" "frontend_public" {
@@ -255,29 +236,49 @@ resource "aws_s3_bucket_policy" "frontend_public" {
   })
 }
 
-# Front your SPA bucket’s website endpoint
+# 1) New: let CloudFront fetch your bucket over HTTPS
+resource "aws_cloudfront_origin_access_identity" "oai" {
+  comment = "Allow CloudFront to fetch from my SPA bucket"
+}
+
 resource "aws_cloudfront_distribution" "frontend" {
   enabled             = true
   is_ipv6_enabled     = true
   default_root_object = "index.html"
   price_class         = "PriceClass_100" # US, Canada & Europe
 
-  # 1) Origin: your S3 *website* host (not the REST API)
-  origin {
-    domain_name = "${aws_s3_bucket.frontend.bucket}.s3-website-us-west-2.amazonaws.com"
-    origin_id   = "S3-Website-Origin"
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 2) ORIGIN: use the S3 REST endpoint + OAI, not the website endpoint
+  # ─────────────────────────────────────────────────────────────────────────────
 
-    custom_origin_config {
-      http_port              = 80
-      https_port             = 443
-      origin_protocol_policy = "http-only"
-      origin_ssl_protocols   = ["TLSv1.2"]
+  # ---> removed old website origin:
+  # origin {
+  #   domain_name = "${aws_s3_bucket.frontend.bucket}.s3-website-${var.aws_region}.amazonaws.com"
+  #   origin_id   = "S3-Website-Origin"
+  #
+  #   custom_origin_config {
+  #     http_port              = 80
+  #     https_port             = 443
+  #     origin_protocol_policy = "http-only"
+  #     origin_ssl_protocols   = ["TLSv1.2"]
+  #   }
+  # }
+
+  # ---> added REST origin + OAI:
+  origin {
+    domain_name = "${aws_s3_bucket.frontend.bucket}.s3.${var.aws_region}.amazonaws.com"
+    origin_id   = "S3-REST-Origin"
+
+    s3_origin_config {
+      origin_access_identity = aws_cloudfront_origin_access_identity.oai.cloudfront_access_identity_path
     }
   }
 
-  # 2) Default behavior: only GET/HEAD, redirect-to-https
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 3) DEFAULT BEHAVIOR: HTTPS only, forward cookies so auth‐state sticks
+  # ─────────────────────────────────────────────────────────────────────────────
   default_cache_behavior {
-    target_origin_id       = "S3-Website-Origin"
+    target_origin_id       = "S3-REST-Origin"
     viewer_protocol_policy = "redirect-to-https"
 
     allowed_methods = ["GET", "HEAD", "OPTIONS"]
@@ -295,14 +296,15 @@ resource "aws_cloudfront_distribution" "frontend" {
     max_ttl     = 86400
   }
 
-  # 3) Catch-all: if origin returns 403/404, serve index.html with 200
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 4) CATCH-ALL: serve index.html in-place for any 403/404 (SPA routing)
+  # ─────────────────────────────────────────────────────────────────────────────
   custom_error_response {
     error_code            = 403
     response_code         = 200
     response_page_path    = "/index.html"
     error_caching_min_ttl = 0
   }
-
   custom_error_response {
     error_code            = 404
     response_code         = 200
@@ -310,18 +312,17 @@ resource "aws_cloudfront_distribution" "frontend" {
     error_caching_min_ttl = 0
   }
 
-  # 4) No geo restrictions
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 5) TLS & TAGS
+  # ─────────────────────────────────────────────────────────────────────────────
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
   restrictions {
     geo_restriction {
       restriction_type = "none"
     }
   }
-
-  # 5) Use the default CloudFront certificate (HTTPS)
-  viewer_certificate {
-    cloudfront_default_certificate = true
-  }
-
   tags = {
     Environment = "prod"
     Project     = "energy-dashboard-frontend"

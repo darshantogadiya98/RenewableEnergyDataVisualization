@@ -1,181 +1,130 @@
-Renewable Energy Dashboard Project
+Renewable Energy Dashboard
+
+Project Overview
+
+The Renewable Energy Dashboard is a full-stack web application for managing and visualizing renewable energy data. It allows users to:
+• Authenticate via JWT-based signup and login
+• Upload CSV datasets of energy production and consumption
+• Visualize hourly renewable energy data in interactive charts
+
+The backend is built with FastAPI (Python) and PostgreSQL, while the frontend is implemented in React (TypeScript). The application can run locally via Docker Compose or be deployed on AWS using Terraform, Elastic Beanstalk, S3, and CloudFront.
 
 Table of Contents
 
-1. Project Overview
-2. Prerequisites
-3. Environment Variables
-4. Local Setup
+1. Prerequisites
+2. Environment Setup
+3. Local Setup
    • Backend
    • Frontend
-5. Running with Docker
-6. Infrastructure with Terraform
-7. AWS Deployment
-   • Elastic Beanstalk
-   • S3 Frontend Hosting
-   • RDS (PostgreSQL)
-8. API Usage
+4. Docker Setup
+5. AWS Infrastructure with Terraform
+6. AWS Deployment Instructions
+   • Backend to Elastic Beanstalk
+   • Frontend to S3 & CloudFront
+   • Cache Invalidation
+7. API Usage
+8. Architecture Diagram
 
-============================================================================================================================
+⸻
 
-1. Project Overview
+Prerequisites
+• Python 3.10+
+• Node.js 16+
+• Docker & Docker Compose
+• Terraform
+• AWS CLI (configured via aws configure)
+• AWS Account with permissions for S3, RDS, EB, CloudFront
 
-The Renewable Energy Dashboard visualizes hourly renewable energy consumption and generation data via secure user authentication, file uploads, and interactive charts.
+⸻
 
-============================================================================================================================
+Environment Setup
 
-2. Prerequisites
-   • OS: Linux, macOS, or Windows 10+ (with WSL2)
-   • Docker: v20.10+
-   • Docker Compose: v1.29+
-   • Python: 3.10+
-   • Node.js: 16.x LTS
-   • npm / yarn: npm v8+ or yarn v1+
-   • AWS CLI: v2.x
-   • Terraform: v1.3+
+Backend (.env)
 
-============================================================================================================================
+Create a .env file in backend/:
 
-3. Environment Variables
-
-Create a .env file in the backend directory with these values:
-
-# Database
-
-DB_HOST=energy-db.cbss0ku2mhwz.us-west-2.rds.amazonaws.com
-DB_PORT=5432
-DB_NAME=postgres
-DB_USER=postgres
-DB_PASS=Admin2784
-
-# JWT
-
-JWT_SECRET=8d6dafb35e8eca6783a8f347158782ce8d055753f9e67370dbc5affd6bd64cd5
-JWT_ALGORITHM=HS256
-JWT_EXPIRES_MINUTES=30
-
-# AWS
-
-AWS_ACCESS_KEY_ID=AKIA3GR3ZBEVIBNADRGM
-AWS_SECRET_ACCESS_KEY=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
+DATABASE_URL=postgresql+asyncpg://<DB_USER>:<DB_PASS>@<DB_HOST>:5432/<DB_NAME>
+SECRET_KEY=<random-32-byte-hex>
+ACCESS_TOKEN_EXPIRE_MINUTES=15
+REFRESH_TOKEN_EXPIRE_DAYS=7
+AWS_ACCESS_KEY_ID=<your-key>
+AWS_SECRET_ACCESS_KEY=<your-secret>
 AWS_REGION=us-west-2
-S3_BUCKET=energy-dashboard-frontend-5790d44a
-BEANSTALK_ENV=energy-dashboard-env
-BEANSTALK_URL=awseb-e-j-AWSEBLoa-EW0YD76YF02R-1633716413.us-west-2.elb.amazonaws.com
+S3_BUCKET=<frontend-s3-bucket>
 
-# GitHub
+Frontend (.env.development & .env.production)
 
-GITHUB_TOKEN=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
+# .env.development
 
-# Frontend URL
+VITE_API_BASE_URL="http://localhost:8000"
 
-FRONTEND_URL=http://energy-dashboard-frontend-5790d44a.s3-website-us-west-2.amazonaws.com
+# .env.production
 
-After CloudFeont Setup - d1v02mozm1fy9b.cloudfront.net (This is main URL with domain on it)
+VITE_API_BASE_URL="https://<your-cloudfront-domain>"
 
-============================================================================================================================
+⸻
 
-4. Local Setup
+Local Setup
 
 Backend
 
-git clone https://github.com/darshantogadiya98/RenewableEnergyDataVisualization.git
-cd energy-dashboard/backend
-python3 -m venv .venv
-source .venv/bin/activate # macOS/Linux
-.\.venv\Scripts\activate # Windows
-pip install --upgrade pip
+cd backend
+python3 -m venv venv
+source venv/bin/activate # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 alembic upgrade head
-uvicorn app.main:app --reload --reload-dir app --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+Visit http://localhost:8000/docs for the interactive API.
 
 Frontend
 
-cd ../frontend
-npm install # or yarn install
-npm run dev # or yarn dev
+cd frontend
+npm install
+npm run dev
 
-# Browse: http://localhost:3000
+Open http://localhost:5173 to view the React app.
 
-============================================================================================================================
+⸻
 
-5. Running with Docker
+Docker Setup
 
-Use Docker Compose for an all-in-one local environment:
+Run the full stack locally with Docker Compose:
 
 docker-compose up --build
 
-    •	backend: FastAPI @ localhost:8000
-    •	db: PostgreSQL @ 5432
-    •	frontend: React @ localhost:3000
+    •	Backend: FastAPI @ localhost:8000
+    •	Database: PostgreSQL @ localhost:5432
+    •	Frontend: React @ localhost:3000 or 5173
 
-============================================================================================================================
+Stop with Ctrl+C and docker-compose down.
 
-6. Infrastructure with Terraform
+⸻
 
-All infra code lives in infra/terraform/. You’ll provision:
-• Networking: Default VPC, subnets
-• Security Groups: ALB, EB instances, RDS
-• Database: RDS PostgreSQL instance
-• Storage: S3 bucket + CloudFront for SPA
-• Application: Elastic Beanstalk app & environment with Docker
-• IAM: Roles for EB service & EC2
-• CDN & CORS: CloudFront distributions for frontend & API
+AWS Infrastructure with Terraform
 
-Quick Commands
+Terraform provisions:
+• RDS PostgreSQL
+• Elastic Beanstalk (FastAPI backend)
+• S3 bucket (React static site)
+• CloudFront distribution (two origins: S3 & EB)
+• IAM roles/policies for secure access
+
+Commands:
 
 cd infra/terraform
-terraform init
-terraform plan -out tfplan
-terraform apply tfplan
+tf init
+tf plan -out=tfplan
+tf apply tfplan
 
-Key Terraform Files
-• provider.tf – AWS provider & state backend
-• variables.tf – input variables (region, passwords, domain)
-• network.tf – VPC & subnet lookups
-• security.tf – SG definitions
-• rds.tf – aws_db_instance + subnet group
-• s3.tf – frontend bucket + website config
-• cloudfront.tf – SPA & API distributions + CORS policy
-• eb.tf – EB application, environment, code bucket/version
-• iam.tf – pre-existing EB roles
-• outputs.tf – endpoints (RDS, EB, CloudFront)
+Outputs include RDS endpoint, S3 bucket name, CloudFront domain, and EB URL.
 
-Use the generated outputs (rds_endpoint, beanstalk_url, frontend_url) to update your .env or CI/CD workflows.
+⸻
 
-============================================================================================================================
+AWS Deployment Instructions
 
-7. AWS Deployment
+Backend to Elastic Beanstalk 1. Package your backend (include app/, requirements.txt, Dockerfile, etc.). 2. Upload zip to S3 or use eb deploy (requires awsebcli). 3. Using EB CLI:
 
-Elastic Beanstalk
+cd backend
 
-eb init energy-dashboard --platform python-3.10 --region us-west-2
-eb use energy-dashboard-env
-eb deploy
-
-S3 Frontend Hosting
-
-cd frontend
-npm run build
-aws s3 sync dist/ \
- s3://energy-dashboard-frontend-5790d44a \
- --delete
-
-# (Optional) CloudFront invalidation
-
-aws cloudfront create-invalidation --distribution-id <DIST_ID> --paths "/\*"
-
-RDS (PostgreSQL)
-• Confirm SG allows EB & local IP
-• Connection string: postgresql://postgres:<DB_PASS>@<rds_endpoint>/energy
-
-============================================================================================================================
-
-8. API Usage
-
-Upload CSV example:
-
-curl -v \
- -H "Authorization: Bearer <JWT>" \
- -F file=@/path/to/data.csv \
- http://127.0.0.1:8000/energy/upload
+eb init –platform python-
