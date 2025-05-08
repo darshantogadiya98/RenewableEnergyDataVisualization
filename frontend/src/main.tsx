@@ -1,18 +1,18 @@
-import React from "react";
+// src/main.tsx  (or wherever you bootstrap React)
 import ReactDOM from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "./App";
-import "./index.css";
 
-const qc = new QueryClient();
+import "antd/dist/reset.css"; // base reset
+import "./globals.css";
+import { ConfigProvider, theme as antdTheme } from "antd";
+import { CssBaseline, ThemeProvider } from "@mui/material";
+import { darkTheme } from "./theme";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <QueryClientProvider client={qc}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </QueryClientProvider>
-  </React.StrictMode>
+  <ConfigProvider theme={{ algorithm: antdTheme.darkAlgorithm }}>
+    <ThemeProvider theme={darkTheme}>
+      <CssBaseline />
+      <App />
+    </ThemeProvider>
+  </ConfigProvider>
 );

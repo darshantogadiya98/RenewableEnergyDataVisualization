@@ -1,42 +1,16 @@
-from datetime import datetime, timedelta
-from jose import jwt
 from passlib.context import CryptContext
+from jose import jwt
+from datetime import datetime, timedelta
 from app.config import settings
-import os
 
-SECRET_KEY = settings.secret_key
+pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
+REFRESH_TOKEN_EXPIRE_DAYS = 7
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
-REFRESH_TOKEN_EXPIRE_DAYS = settings.refresh_token_expire_days
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password):
-    return pwd_context.hash(password)
-
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
-    to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
-def create_refresh_token(
-    data: dict,
-    expires_delta: timedelta | None = None
-) -> str:
-    """
-    Generate a JWT intended for “refresh” flows, using
-    settings.refresh_token_expire_days by default.
-    """
-    to_encode = data.copy()
-    # default to REFRESH_TOKEN_EXPIRE_DAYS if no override
-    expire = datetime.utcnow() + (
-        expires_delta
-        or timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-    )
-    to_encode.update({"exp": expire})
-    # you can even use a different signing key/alg if you like
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+create_access_token = lambda payload, expires_delta=None: jwt.encode({**payload, "exp": (datetime.utcnow()+expires_delta).timestamp() if expires_delta else (datetime.utcnow()+timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)).timestamp()}, settings.secret_key, algorithm=ALGORITHM)
+create_refresh_token = lambda payload, expires_delta=None: jwt.encode({**payload, "exp": (datetime.utcnow()+expires_delta).timestamp() if expires_delta else (datetime.utcnow()+timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)).timestamp()}, settings.secret_key, algorithm=ALGORITHM)
+verify_password = lambda plain, hashed: pwd_ctx.verify(plain, hashed)
+get_password_hash = lambda pwd: pwd_ctx.hash(pwd)
+verify_refresh_token = lambda token: jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
