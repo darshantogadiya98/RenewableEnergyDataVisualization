@@ -219,16 +219,7 @@ Replace `localhost:8000` with your production domain as needed.
 
 ## Architecture Diagram
 
-```mermaid
-flowchart LR
-  subgraph ""
-    direction TB
-    User["User"] -->|HTTPS| CF["CloudFront"]
-  end
-  CF -->|Static Files| S3["S3 Bucket"]
-  CF -->|API Calls| EB["Elastic Beanstalk"]
-  EB -->|SQL| RDS["Amazon RDS\n(PostgreSQL)"]
-```
+<img src="./architechture.png" alt="Architecture Diagram" />
 
 _Users access the application via CloudFront. Static content is served from S3, and API requests are routed to Elastic Beanstalk, which communicates with RDS._
 
